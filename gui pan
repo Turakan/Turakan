@@ -1,3 +1,8 @@
+-- ตรวจสอบว่ามี GUI อยู่แล้วหรือไม่ หากมีให้ลบทิ้ง
+if game:GetService("CoreGui"):FindFirstChild("ControlMenu") then
+    game:GetService("CoreGui").ControlMenu:Destroy()
+end
+
 -- สร้าง GUI
 local ScreenGui = Instance.new("ScreenGui")
 local Frame = Instance.new("Frame")
@@ -6,7 +11,7 @@ local StopButton = Instance.new("TextButton")
 
 -- ตั้งค่า GUI
 ScreenGui.Name = "ControlMenu"
-ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Parent = game:GetService("CoreGui") -- ใช้ CoreGui เพื่อให้ GUI คงอยู่แม้ผู้เล่นตาย
 
 Frame.Name = "MainFrame"
 Frame.Parent = ScreenGui
