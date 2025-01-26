@@ -1,0 +1,145 @@
+-- สร้าง GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local StartButton = Instance.new("TextButton")
+local StopButton = Instance.new("TextButton")
+
+-- ตั้งค่า GUI
+ScreenGui.Name = "ControlMenu"
+ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+
+Frame.Name = "MainFrame"
+Frame.Parent = ScreenGui
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Size = UDim2.new(0, 200, 0, 100)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+
+StartButton.Name = "StartButton"
+StartButton.Parent = Frame
+StartButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+StartButton.Size = UDim2.new(0, 180, 0, 40)
+StartButton.Position = UDim2.new(0, 10, 0, 10)
+StartButton.Text = "เริ่มทำงาน"
+
+StopButton.Name = "StopButton"
+StopButton.Parent = Frame
+StopButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+StopButton.Size = UDim2.new(0, 180, 0, 40)
+StopButton.Position = UDim2.new(0, 10, 0, 50)
+StopButton.Text = "หยุดทำงาน"
+
+-- สถานะการทำงาน
+local isRunning = false
+local stopRequested = false
+local runCount = 0
+
+-- ฟังก์ชันสำหรับรันสคริปต์ 1 รอบ
+local function runSingleScript()
+    while wait() and not stopRequested do
+        local player = game:GetService("Players").LocalPlayer
+        local monster = workspace:WaitForChild("Monster")
+        local monsterHead = monster:WaitForChild("Head")
+        local monsterHealth = monster:WaitForChild("Humanoid")
+
+        local pancakes = player.Backpack:FindFirstChild("Pancakes") or player.Character:FindFirstChild("Pancakes")
+
+        if monster:FindFirstChild("ForceField") then
+            repeat
+                wait()
+            until not monster:FindFirstChild("ForceField")
+        end
+
+        if monsterHealth.Health > 0 then
+            -- args สำหรับ GunH
+            local args1 = {
+                [1] = "\240\159\166\146",
+                [2] = pancakes,
+                [3] = "JbxKvDr][Rw^`GIwFauj[^FVyti\\G\\4",
+                [4] = 1,
+                [5] = monsterHead,
+                [6] = monsterHead.Position,
+                [7] = Vector3.new(0.9394124150276184, -0.04613981768488884, -0.3396703004837036),
+                [10] = 811.392,
+                [11] = "HSP"
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("GunH"):FireServer(unpack(args1))
+
+            -- args สำหรับ GunE_S
+            local args2 = {
+                [1] = "UQuDbaGMcAJ[HcPD]Omk_aXczoBzgO5",
+                [2] = pancakes,
+                [3] = "FDS9I83",
+                [4] = Vector3.new(280.1044921875, 16.960968017578125, -198.5308074951172),
+                [5] = {
+                    [1] = Vector3.new(-0.21743327379226685, -0.9760080575942993, -0.011452799662947655)
+                },
+                [7] = {},
+                [8] = {
+                    ["Ammo"] = 999999999999989,
+                    ["Reloading"] = false,
+                    ["StoredAmmo"] = math.huge
+                },
+                [10] = Vector3.new(276.131103515625, 14.972665786743164, -200.40972900390625),
+                [11] = CFrame.new(276.131103515625, 14.972665786743164, -200.40972900390625, -0.5932828783988953, 0.7784894704818726, -0.20486518740653992, 7.4505797087454084e-09, 0.2544928193092346, 0.9670747518539429, 0.8049941062927246, 0.5737488865852356, -0.1509862244129181),
+                [12] = pancakes.Handle
+            }
+            game:GetService("ReplicatedStorage"):WaitForChild("Events"):WaitForChild("GunE_S"):FireServer(unpack(args2))
+        end
+    end
+end
+
+-- ฟังก์ชันสำหรับเริ่มการทำงาน
+local function startScripts()
+    if isRunning then return end -- ถ้ากำลังทำงานอยู่แล้ว ไม่ต้องเริ่มใหม่
+    isRunning = true
+    stopRequested = false
+    runCount = 0
+    for i = 1, 6 do
+        if stopRequested then break end
+        runCount = runCount + 1
+        spawn(runSingleScript) -- สร้าง Task ใหม่
+    end
+    print("Started 6 scripts.")
+end
+
+-- ฟังก์ชันสำหรับหยุดการทำงาน
+local function stopScripts()
+    if not isRunning then return end -- ถ้าไม่มีการทำงานอยู่ ไม่ต้องหยุด
+    stopRequested = true
+    isRunning = false
+    print("Stopped all scripts.")
+end
+
+-- การทำงานของปุ่ม
+StartButton.MouseButton1Click:Connect(function()
+    startScripts()
+end)
+
+StopButton.MouseButton1Click:Connect(function()
+    stopScripts()
+end)
+
+-- การลากเมนู (Drag) ในมือถือ
+local dragging = false
+local dragInput, dragStart, startPos
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.Touch then
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+Frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
