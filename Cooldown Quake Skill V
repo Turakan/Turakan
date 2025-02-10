@@ -1,0 +1,2 @@
+---สั่น
+game:GetService("Players").LocalPlayer.Character.Tremor:FindFirstChild("Dual Tsunami").Event:FireServer()
