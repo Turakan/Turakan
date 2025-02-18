@@ -1,1 +1,13 @@
-game:GetService("Players").LocalPlayer.Character.Tremor:FindFirstChild("Dual Tsunami").Event:FireServer()
+local player = game:GetService("Players").LocalPlayer
+local gui = player.PlayerGui.Moblie:WaitForChild("V")
+
+gui.MouseButton1Click:Connect(function()
+    local character = player.Character
+    if character and character:FindFirstChild("Tremor") then
+        local tremor = character.Tremor
+        local dualTsunami = tremor:FindFirstChild("Dual Tsunami")
+        if dualTsunami and dualTsunami:FindFirstChild("Event") then
+            dualTsunami.Event:FireServer()
+        end
+    end
+end)
