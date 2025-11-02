@@ -1,0 +1,183 @@
+-- ==================================================
+-- == สร้างโดย not
+-- == สร้างเมนูถาวร (ไม่หายเมื่อตาย) พร้อมปุ่ม
+-- ==================================================
+
+-- ### 1. การตั้งค่า Services ที่จำเป็น ###
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ### 2. การสร้าง UI (เมนูหลัก) ###
+
+-- สร้าง ScreenGui (หน้าจอหลักของ UI)
+local MyScreenGui = Instance.new("ScreenGui")
+MyScreenGui.Name = "MyPersistentMenu"
+-- !!! สำคัญ: ตั้งค่านี้เป็น false เพื่อไม่ให้ UI หายไปเมื่อตัวละครเกิดใหม่ (ตาย)
+MyScreenGui.ResetOnSpawn = false 
+MyScreenGui.Parent = PlayerGui
+
+-- สร้าง Frame (กรอบเมนู)
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainMenu"
+MainFrame.Size = UDim2.new(0, 250, 0, 150) -- ขนาด (กว้าง 250, สูง 150)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -75) -- จัดให้อยู่กึ่งกลางจอ
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 45) -- สีพื้นหลัง (เทาเข้มอมน้ำเงิน)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true -- ทำให้สามารถโต้ตอบได้ (จำเป็นสำหรับการลาก)
+MainFrame.Draggable = true -- ทำให้สามารถลาก Frame นี้ได้
+MainFrame.Parent = MyScreenGui
+
+-- สร้าง UICorner (เพื่อทำให้ขอบโค้ง)
+local FrameCorner = Instance.new("UICorner")
+FrameCorner.CornerRadius = UDim.new(0, 12) -- ค่าความโค้ง (12 pixels)
+FrameCorner.Parent = MainFrame
+
+-- ### 3. การสร้างปุ่ม ###
+
+-- == ปุ่มที่ 1 ==
+local Button1 = Instance.new("TextButton")
+Button1.Name = "Button1"
+Button1.Text = "1"
+Button1.Size = UDim2.new(0, 100, 0, 40)
+Button1.Position = UDim2.new(0.5, -50, 0, 25) -- จัดตำแหน่ง (Y = 25)
+Button1.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+Button1.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button1.Font = Enum.Font.SourceSansBold
+Button1.TextSize = 18
+Button1.Parent = MainFrame
+
+local Button1Corner = Instance.new("UICorner")
+Button1Corner.CornerRadius = UDim.new(0, 8)
+Button1Corner.Parent = Button1
+
+-- == ปุ่มที่ 2 ==
+local Button2 = Instance.new("TextButton")
+Button2.Name = "Button2"
+Button2.Text = "2 [OFF]" -- สถานะเริ่มต้นคือปิด
+Button2.Size = UDim2.new(0, 100, 0, 40)
+Button2.Position = UDim2.new(0.5, -50, 0, 85) -- จัดตำแหน่ง (Y = 85, อยู่ใต้ปุ่ม 1)
+Button2.BackgroundColor3 = Color3.fromRGB(70, 70, 80) -- สีเทา (ปิด)
+Button2.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button2.Font = Enum.Font.SourceSansBold
+Button2.TextSize = 18
+Button2.Parent = MainFrame
+
+local Button2Corner = Instance.new("UICorner")
+Button2Corner.CornerRadius = UDim.new(0, 8)
+Button2Corner.Parent = Button2
+
+-- ### 4. การทำงานของปุ่มที่ 1 (ShopEvent Loop) ###
+
+Button1.MouseButton1Click:Connect(function()
+    -- รันโค้ดใน Thread ใหม่ (task.spawn) 
+    -- เพื่อป้องกันไม่ให้ UI หรือเกมค้างขณะที่ลูปทำงาน
+    task.spawn(function()
+        print("[ปุ่ม 1] เริ่มรันสคริปต์ลูป 10 วินาที...")
+        
+        local DURATION = 10 -- ระยะเวลาที่ต้องการรันสคริปต์ (วินาที)
+        local DELAY = 0.1   -- ความหน่วงระหว่างรอบ (วินาที)
+        local startTime = tick() -- บันทึกเวลาเริ่มต้น
+
+        -- วนลูปตราบใดที่เวลาที่ผ่านไปยังไม่ถึง DURATION
+        while (tick() - startTime) < DURATION do
+            -- โค้ดจากผู้ใช้
+            local args = {
+                [1] = "ToolPurchase",
+                [2] = "Combat",
+                [3] = "purple_cannon",
+                [4] = 0,
+                [5] = "Guard Bot",
+                [6] = "rbxassetid://17315461931",
+                [7] = "\"A sturdy and unstoppable Robot that will protect you from anything!\"        (Don't ask me why i have this! - Nooxls)"
+            }
+            
+            -- ใช้ pcall เพื่อป้องกัน Error หาก Event ไม่มีอยู่จริง
+            pcall(function()
+                ReplicatedStorage.Events.ShopEvent:FireServer(unpack(args))
+            end)
+            
+            -- หน่วงเวลาตามที่กำหนด
+            task.wait(DELAY)
+        end
+
+        print("[ปุ่ม 1] รันสคริปต์เสร็จสิ้น (10 วินาที)")
+    end)
+end)
+
+
+-- ### 5. การทำงานของปุ่มที่ 2 (Cannon Click Toggle) ###
+
+local isCannonActive = false
+local mouseConnection = nil
+local charConnection = nil
+local mouse = LocalPlayer:GetMouse() -- ดึงเมาส์มาเก็บไว้
+
+-- ฟังก์ชันสำหรับส่งตำแหน่งการคลิกเมาส์
+local function OnMouseClick_B2()
+    local clickPosition = mouse.Hit.Position
+
+    local args = {
+        [1] = "Shoot",
+        [2] = clickPosition -- ตำแหน่ง Vector3 ที่จะถูกส่งไป
+    }
+
+    -- ดึง Character ปัจจุบัน *ทุกครั้งที่คลิก* เผื่อผู้เล่นตายแล้วเกิดใหม่
+    local currentCharacter = LocalPlayer.Character
+    if currentCharacter and currentCharacter:FindFirstChild("purple_cannon") then
+        local cannon = currentCharacter.purple_cannon
+        if cannon:FindFirstChild("Event") then
+            -- ใช้ pcall เพื่อป้องกัน Error
+            pcall(function()
+                cannon.Event:FireServer(unpack(args))
+            end)
+        end
+    end
+end
+
+-- ฟังก์ชันนี้จะเชื่อมต่อเมื่อเปิดใช้งานปุ่ม 2
+-- แม้ว่าโค้ดข้างบนจะดึง Character ใหม่ทุกครั้ง
+-- การเชื่อมต่อและยกเลิกการเชื่อมต่อ CharacterAdded เป็นการปฏิบัติที่ดี
+local function OnCharacterAdded_B2(newCharacter)
+    -- ไม่จำเป็นต้องทำอะไรในนี้เป็นพิเศษ เพราะ OnMouseClick_B2 จัดการเอง
+    print("[ปุ่ม 2] ตรวจพบตัวละครใหม่")
+end
+
+-- เมื่อคลิกปุ่ม 2 (เปิด/ปิด)
+Button2.MouseButton1Click:Connect(function()
+    if not isCannonActive then
+        -- ถ้ายังไม่เปิด -> ให้เปิด
+        isCannonActive = true
+        Button2.Text = "2 [ON]"
+        Button2.BackgroundColor3 = Color3.fromRGB(80, 160, 80) -- เปลี่ยนเป็นสีเขียว
+        
+        -- เชื่อมต่อ (Connect) Events
+        mouseConnection = mouse.Button1Down:Connect(OnMouseClick_B2)
+        charConnection = LocalPlayer.CharacterAdded:Connect(OnCharacterAdded_B2)
+        
+        print("[ปุ่ม 2] เปิดใช้งานการยิงปืนใหญ่")
+        
+    else
+        -- ถ้าเปิดอยู่ -> ให้ปิด
+        isCannonActive = false
+        Button2.Text = "2 [OFF]"
+        Button2.BackgroundColor3 = Color3.fromRGB(70, 70, 80) -- กลับเป็นสีเทา
+        
+        -- ยกเลิกการเชื่อมต่อ (Disconnect) Events เพื่อหยุดการทำงาน
+        if mouseConnection then
+            mouseConnection:Disconnect()
+            mouseConnection = nil
+        end
+        if charConnection then
+            charConnection:Disconnect()
+            charConnection = nil
+        end
+        
+        print("[ปุ่ม 2] ปิดใช้งานการยิงปืนใหญ่")
+    end
+end)
+
+print("สร้างเมนูแบบถาวรสำเร็จแล้ว!")
