@@ -1,0 +1,175 @@
+--[[
+TELEKINESIS ULTIMATE HYBRID (V11 + V12 + V8.5)
+----------------------------------------------
+- Anti-Theft: ระบบดึงสิทธิ์ Ownership คืนทุก 0.01 วินาที
+- Velocity Jitter: หลอกเซิร์ฟเวอร์ว่าวัตถุมีการขยับตลอดเวลา (กันหลุด)
+- Instant Burst: ระบบยิงแบบไร้ดีเลย์จาก V8.5
+- Infinite Range: ยิงเรย์แคสหาของได้ทุกระยะ
+]]
+
+local Player = game:GetService("Players").LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Mouse = Player:GetMouse()
+local RunService = game:GetService("RunService")
+
+-- // --- [GLOBAL BYPASS] ระบบยึดอำนาจเบ็ดเสร็จ ---
+RunService.Stepped:Connect(function()
+    pcall(function()
+        settings().Physics.AllowSleep = false
+        Player.SimulationRadius = math.huge -- แผ่รัศมีคุมทั้งแมพ
+        if sethiddenproperty then
+            sethiddenproperty(Player, "SimulationRadius", 1e30)
+            sethiddenproperty(Player, "MaxSimulationRadius", 1e30)
+        end
+    end)
+end)
+
+-- // --- SETTINGS ---
+local Config = {
+    MaxParts = 35,
+    OrbitRadius = 10,
+    RotationSpeed = 4,
+    ThrowForce = 1800,
+    Power = 800000, -- แรงดึงมหาศาลกันคนแย่ง
+    LineColor = Color3.fromRGB(0, 255, 255) -- สี Cyan (Bypass Active)
+}
+
+local HeldParts = {}
+
+-- // --- CORE LOGIC: OWNERSHIP LOCKER ---
+local function ClaimOwnership(part)
+    if part and part:IsA("BasePart") then
+        -- เทคนิค V12: ยัด Velocity ที่เซิร์ฟเวอร์ปฏิเสธไม่ได้
+        part.Velocity = Vector3.new(0, 30, 0) 
+        part.AssemblyLinearVelocity = Vector3.new(0, 30, 0)
+    end
+end
+
+-- // --- GRAB SYSTEM (HYBRID) ---
+local function Grab(part)
+    if not part or not part:IsA("BasePart") or part.Anchored or part:IsDescendantOf(Character) or HeldParts[part] then return end
+    if #HeldParts >= Config.MaxParts then return end
+
+    part:BreakJoints()
+    
+    local data = {}
+    -- ใช้ BodyPosition แบบคลาสสิก (เสถียรที่สุดในการกันคนแย่ง)
+    data.BP = Instance.new("BodyPosition", part)
+    data.BP.MaxForce = Vector3.new(1, 1, 1) * math.huge
+    data.BP.P = Config.Power
+    data.BP.D = 600
+    
+    data.BG = Instance.new("BodyGyro", part)
+    data.BG.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+    data.BG.P = Config.Power
+
+    -- [V11 + V12 HYBRID LOOP]
+    data.Connection = RunService.Heartbeat:Connect(function()
+        if part and part.Parent then
+            part.CanCollide = false
+            ClaimOwnership(part) -- ย้ำสิทธิ์ Ownership ทุกเฟรม
+            
+            -- Emergency Re-capture: ถ้าค่า ReceiveAge > 0 (มีคนพยายามแย่ง) ให้เขย่าตำแหน่งทันที
+            if part.ReceiveAge > 0 then
+                part.Velocity = Vector3.new(0, 50, 0)
+            end
+        else
+            if data.Connection then data.Connection:Disconnect() end
+            HeldParts[part] = nil
+        end
+    end)
+
+    -- Effect: SelectionBox แบบหนา
+    local sb = Instance.new("SelectionBox", part)
+    sb.Adornee = part
+    sb.Color3 = Config.Color or Config.LineColor
+    sb.LineThickness = 0.1
+    data.Box = sb
+
+    HeldParts[part] = data
+end
+
+-- // --- BURST SYSTEM (V8.5 INSTANT) ---
+local function ShootEverythingAt(targetPlayer)
+    if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("HumanoidRootPart") then return end
+    local targetPos = targetPlayer.Character.HumanoidRootPart.Position
+
+    for part, data in pairs(HeldParts) do
+        task.spawn(function()
+            if data.Connection then data.Connection:Disconnect() end
+            pcall(function()
+                data.BP:Destroy(); data.BG:Destroy(); data.Box:Destroy()
+            end)
+            
+            part.CanCollide = true
+            local direction = (targetPos - part.Position).Unit
+            part.Velocity = direction * Config.ThrowForce
+            part.RotVelocity = Vector3.new(1000, 1000, 1000) -- หมุนควงสว่าน (Fling Mode)
+        end)
+        HeldParts[part] = nil
+    end
+end
+
+-- // --- GUI SYSTEM (V8.5 STYLE) ---
+local ScreenGui = Instance.new("ScreenGui", Player.PlayerGui)
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 220, 0, 320)
+Main.Position = UDim2.new(0.7, 0, 0.4, 0)
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+Main.Draggable = true; Main.Active = true
+Instance.new("UICorner", Main)
+
+local Title = Instance.new("TextLabel", Main)
+Title.Text = "🛡️ ULTIMATE V12+"
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.TextColor3 = Color3.fromRGB(0, 255, 255)
+Title.Font = "GothamBold"
+Instance.new("UICorner", Title)
+
+local Scroll = Instance.new("ScrollingFrame", Main)
+Scroll.Size = UDim2.new(1, -10, 1, -50); Scroll.Position = UDim2.new(0, 5, 0, 45)
+Scroll.BackgroundTransparency = 1; Scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+Instance.new("UIListLayout", Scroll).Padding = UDim.new(0, 5)
+
+local function UpdateList()
+    for _, v in pairs(Scroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= Player then
+            local b = Instance.new("TextButton", Scroll)
+            b.Size = UDim2.new(0.95, 0, 0, 35); b.Text = p.DisplayName
+            b.BackgroundColor3 = Color3.fromRGB(40, 40, 40); b.TextColor3 = Color3.white
+            b.Font = "GothamMedium"; b.TextSize = 12
+            b.MouseButton1Click:Connect(function() ShootEverythingAt(p) end)
+            Instance.new("UICorner", b)
+        end
+    end
+end
+
+-- // --- RENDER LOOP (ORBIT) ---
+RunService.RenderStepped:Connect(function()
+    local current = {}
+    for p, d in pairs(HeldParts) do table.insert(current, {p, d}) end
+    local t = tick() * Config.RotationSpeed
+    for i, item in ipairs(current) do
+        local part, data = item[1], item[2]
+        local angle = t + (i * (math.pi * 2 / #current))
+        local radius = Config.OrbitRadius + (#current * 0.2)
+        local targetPos = Character.HumanoidRootPart.Position + Vector3.new(math.cos(angle) * radius, 3, math.sin(angle) * radius)
+        
+        if data.BP then data.BP.Position = targetPos end
+        if data.BG then data.BG.CFrame = CFrame.new(part.Position, targetPos) end
+    end
+end)
+
+-- // --- TOOL START ---
+local Tool = Instance.new("Tool", Player.Backpack)
+Tool.Name = "Telekinesis [GOD]"
+Tool.RequiresHandle = false
+
+Tool.Equipped:Connect(UpdateList)
+Mouse.Button1Down:Connect(function()
+    if Tool.Parent == Character then Grab(Mouse.Target) end
+end)
+
+print("ULTIMATE TELEKINESIS LOADED - ระบบยึดสิทธิ์ทำงานแล้ว")
